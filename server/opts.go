@@ -4,8 +4,8 @@ package server
 
 import (
 	"fmt"
-
 	"io/ioutil"
+	"net"
 	"net/url"
 	"strings"
 	"time"
@@ -204,6 +204,33 @@ func MergeOptions(fileOpts, flagOpts *Options) *Options {
 		opts.ProfPort = flagOpts.ProfPort
 	}
 	return &opts
+}
+
+//remove any self referencing IPs/Hosts in Route
+func RemoveSelfReference(opts *Options) *Options {
+	interfaceAddr, _ := net.InterfaceAddrs()
+	var ip net.IP
+	var host []string
+	var selfReferences []string
+	for _, v := range interfaceAddr {
+		ip, _, _ = net.ParseCIDR(v.String())
+		selfReferences = append(selfReferences, ip.String())
+		host, _ = net.LookupAddr(ip.String())
+		selfReferences = append(selfReferences, host...)
+	}
+
+	var i int
+	for n := 0; n < len(selfReferences); n++ {
+		i = 0
+		for i < len(opts.Routes) {
+			if strings.Contains(opts.Routes[i].String(), "@"+strings.Trim(selfReferences[n], ".")) {
+				opts.Routes = append(opts.Routes[:i], opts.Routes[i+1:]...)
+			} else {
+				i++
+			}
+		}
+	}
+	return opts
 }
 
 func processOptions(opts *Options) {

@@ -6,7 +6,7 @@ import (
 	"flag"
 	"strings"
 
-	"github.com/apcera/gnatsd/server"
+	"github.com/simonleung8/gnatsd/server"
 )
 
 func main() {
@@ -81,6 +81,9 @@ func main() {
 		}
 		opts = *server.MergeOptions(fileOpts, &opts)
 	}
+
+	// Remove any host/ip that points to itself in Route
+	opts = *server.RemoveSelfReference(&opts)
 
 	// Create the server with appropriate options.
 	s := server.New(&opts)
